@@ -1,16 +1,48 @@
+'use client'
 import { CarCard, CustomFilter, Hero, SearchBar, ShowMore } from '@/components'
 import { fuels, yearsOfProduction } from '@/constants'
 import { fetchCars } from '@/utils'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
-export default async function Home({ searchParams }: any) {
-  const allCars = await fetchCars({
-    manufacturer: searchParams.manufacturer || '',
-    year: searchParams.year || 2022,
-    fuel: searchParams.fuel || '',
-    limit: searchParams.limit || 10,
-    model: searchParams.model || ''
-  })
+export default function Home() {
+  const [allCars, setAllCars] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  //Search State
+  const [manufacturer, setManufacturer] = useState('')
+  const [model, setModel] = useState('')
+
+  //Filter State
+  const [fuel, setFuel] = useState('')
+  const [year, setYear] = useState(2022)
+
+  // Pagination State
+  const [limit, setLimit] = useState(10)
+
+  const getCars = async () => {
+    setLoading(true)
+    try {
+      const result = await fetchCars({
+        manufacturer: manufacturer.toLowerCase() || '',
+        model: model.toLowerCase() || '',
+        fuel: fuel.toLowerCase() || '',
+        year: year || 2022,
+        limit: limit || 10
+      })
+
+      setAllCars(result)
+    } catch (error) {
+      console.error()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    getCars()
+  }, [fuel, year, limit, manufacturer, model])
+
   const isDataEmpty = !Array.isArray(allCars) || allCars.length < 1 || !allCars
 
   return (
@@ -33,14 +65,11 @@ export default async function Home({ searchParams }: any) {
         {!isDataEmpty ? (
           <section>
             <div className='home__cars-wrapper'>
-              {allCars?.map((car) => (
-                <CarCard key={car.id} car={car} />
+              {allCars?.map((car, index) => (
+                <CarCard key={`car-${index}`} car={car} />
               ))}
             </div>
-            <ShowMore
-              pageNumber={(searchParams.limit || 10) / 10}
-              isNext={(searchParams.limit || 10) > allCars.length}
-            />
+            <ShowMore pageNumber={(limit || 10) / 10} isNext={(limit || 10) > allCars.length} />
           </section>
         ) : (
           <div className='home__error-container'>
